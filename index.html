@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin Mitra Driver GARJEK</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        garjek: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d'
+                        }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2 max-w-sm"></div>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="view-login" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-garjek-600 text-white rounded-2xl flex items-center justify-center text-2xl font-black mx-auto shadow-lg">
+                    GJ
+                </div>
+                <h2 class="text-2xl font-black text-slate-900">GARJEK ADMIN</h2>
+                <p class="text-xs text-slate-500">Masukan kredensial administrator untuk mengakses portal verifikasi driver.</p>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Username Admin</label>
+                    <input type="text" id="admin-user" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-garjek-500" placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password</label>
+                    <input type="password" id="admin-pass" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-garjek-500" placeholder="••••••••">
+                </div>
+                <div class="text-xs text-slate-400 text-center py-1">
+                    Default Username: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-mono">admin</code> | Pass: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-mono">admin123</code>
+                </div>
+                <button type="submit" id="btn-login" class="w-full py-3 bg-garjek-600 hover:bg-garjek-700 text-white font-extrabold text-sm rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-sign-in-alt"></i> MASUK DASHBOARD
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD CONTAINER (Visible after login) -->
+    <div id="view-dashboard" class="hidden flex-1 flex flex-col">
+        <!-- Admin Header Navbar -->
+        <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-garjek-600 text-white px-2.5 py-1 rounded-xl font-black text-lg">
+                        GJ
+                    </div>
+                    <div>
+                        <h1 class="text-base font-black tracking-tight leading-none">ADMIN DASHBOARD</h1>
+                        <p class="text-[10px] text-slate-400">GARJEK Mitra Driver Management</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button onclick="loadDashboardData()" class="p-2 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition" title="Refresh Data">
+                        <i class="fas fa-sync-alt"></i> <span class="hidden md:inline">Refresh</span>
+                    </button>
+                    <button onclick="openSettingsModal()" class="p-2 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition" title="Pengaturan Sistem">
+                        <i class="fas fa-cog"></i> <span class="hidden md:inline">Settings</span>
+                    </button>
+                    <button onclick="adminLogout()" class="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition flex items-center gap-1">
+                        <i class="fas fa-sign-out-alt"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Admin Content Area -->
+        <main class="max-w-7xl mx-auto w-full px-4 py-6 space-y-6 flex-1">
+
+            <!-- STATISTIC METRIC CARDS -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                <!-- Total Drivers -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Total Pendaftar</p>
+                        <h3 class="text-xl font-black text-slate-800 mt-0.5" id="stat-total">0</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+
+                <!-- Hari Ini -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Pendaftar Hari Ini</p>
+                        <h3 class="text-xl font-black text-slate-800 mt-0.5" id="stat-today">0</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                </div>
+
+                <!-- GARBIKE -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Mitra GARBIKE</p>
+                        <h3 class="text-xl font-black text-garjek-700 mt-0.5" id="stat-garbike">0</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-garjek-50 text-garjek-600 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fas fa-motorcycle"></i>
+                    </div>
+                </div>
+
+                <!-- GARCAR -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Mitra GARCAR</p>
+                        <h3 class="text-xl font-black text-slate-800 mt-0.5" id="stat-garcar">0</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fas fa-car"></i>
+                    </div>
+                </div>
+
+                <!-- Menunggu Verifikasi -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between col-span-2 lg:col-span-1">
+                    <div>
+                        <p class="text-[10px] font-bold text-amber-600 uppercase">Menunggu Verifikasi</p>
+                        <h3 class="text-xl font-black text-amber-600 mt-0.5" id="stat-pending">0</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS SECTION -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Trend Registration Line Chart -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm md:col-span-2">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-700">Grafik Trend Pendaftaran</h4>
+                        <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-semibold">Realtime Data</span>
+                    </div>
+                    <div class="h-52">
+                        <canvas id="chart-trend"></canvas>
+                    </div>
+                </div>
+
+                <!-- Service Comparison Donut Chart -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 mb-3">Perbandingan Layanan</h4>
+                    <div class="h-52 flex items-center justify-center">
+                        <canvas id="chart-service"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DATA DRIVER TABLE SECTION -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <!-- Table Controls Header -->
+                <div class="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-3 justify-between items-center">
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wide">Daftar Driver</h3>
+                        <span id="badge-total-table" class="bg-slate-100 text-slate-600 font-bold text-xs px-2.5 py-0.5 rounded-full">0 Data</span>
+                    </div>
+
+                    <!-- Search and Filters -->
+                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                        <!-- Search Box -->
+                        <div class="relative flex-1 md:w-64">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" id="table-search" oninput="applyTableFilters()" placeholder="Cari NIK, Nama, Plat..." class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-garjek-500">
+                        </div>
+
+                        <!-- Service Filter -->
+                        <select id="filter-service" onchange="applyTableFilters()" class="py-1.5 px-3 rounded-xl border border-slate-300 text-xs font-semibold bg-white text-slate-700">
+                            <option value="">Semua Layanan</option>
+                            <option value="GARBIKE">GARBIKE</option>
+                            <option value="GARCAR">GARCAR</option>
+                        </select>
+
+                        <!-- Status Filter -->
+                        <select id="filter-status" onchange="applyTableFilters()" class="py-1.5 px-3 rounded-xl border border-slate-300 text-xs font-semibold bg-white text-slate-700">
+                            <option value="">Semua Status</option>
+                            <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                            <option value="Diproses">Diproses</option>
+                            <option value="Disetujui">Disetujui</option>
+                            <option value="Ditolak">Ditolak</option>
+                            <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                        </select>
+
+                        <!-- Export CSV Button -->
+                        <button onclick="exportToCSV()" class="px-3 py-1.5 bg-garjek-600 hover:bg-garjek-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 shadow">
+                            <i class="fas fa-file-excel"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Responsive Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">No. Pendaftaran</th>
+                                <th class="p-3">Tanggal</th>
+                                <th class="p-3">Nama Driver</th>
+                                <th class="p-3">NIK</th>
+                                <th class="p-3">Layanan</th>
+                                <th class="p-3">Plat Kendaraan</th>
+                                <th class="p-3">Status Dokumen</th>
+                                <th class="p-3">Status Bayar</th>
+                                <th class="p-3">Status Final</th>
+                                <th class="p-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-drivers" class="divide-y divide-slate-100 font-medium text-slate-700">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="table-empty-state" class="p-8 text-center hidden">
+                    <i class="fas fa-folder-open text-slate-300 text-4xl mb-2"></i>
+                    <p class="text-xs font-bold text-slate-500">Tidak ada data driver ditemukan.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- DRIVER DETAIL & VERIFICATION MODAL -->
+    <div id="modal-detail" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-6">
+            
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                    <span class="text-[10px] font-bold text-garjek-600 bg-garjek-50 px-2.5 py-1 rounded-full uppercase" id="md-layanan">GARBIKE</span>
+                    <h3 class="text-xl font-black text-slate-900 mt-1" id="md-nama">Ahmad Syaifuddin</h3>
+                    <p class="text-xs font-mono text-slate-400" id="md-id">GJ-20260912-0001</p>
+                </div>
+                <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <!-- Personal Data -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-2">
+                    <h4 class="font-extrabold text-slate-800 uppercase tracking-wide border-b border-slate-200 pb-1 flex items-center gap-1.5">
+                        <i class="fas fa-user text-garjek-600"></i> Data Pribadi
+                    </h4>
+                    <p><strong class="text-slate-500">NIK:</strong> <span id="md-nik" class="font-mono font-bold">-</span></p>
+                    <p><strong class="text-slate-500">TTL:</strong> <span id="md-ttl">-</span></p>
+                    <p><strong class="text-slate-500">Jenis Kelamin:</strong> <span id="md-jk">-</span></p>
+                    <p><strong class="text-slate-500">WhatsApp:</strong> <span id="md-wa" class="font-mono text-blue-600 font-bold">-</span></p>
+                    <p><strong class="text-slate-500">Email:</strong> <span id="md-email">-</span></p>
+                </div>
+
+                <!-- Vehicle Data -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-2">
+                    <h4 class="font-extrabold text-slate-800 uppercase tracking-wide border-b border-slate-200 pb-1 flex items-center gap-1.5">
+                        <i class="fas fa-motorcycle text-garjek-600"></i> Data Kendaraan
+                    </h4>
+                    <p><strong class="text-slate-500">Plat Nomor:</strong> <span id="md-plat" class="font-mono font-bold uppercase text-slate-900">-</span></p>
+                    <p><strong class="text-slate-500">Merek/Tipe:</strong> <span id="md-kendaraan">-</span></p>
+                    <p><strong class="text-slate-500">Tahun/Warna:</strong> <span id="md-tahun-warna">-</span></p>
+                    <p><strong class="text-slate-500">STNK:</strong> <span id="md-stnk" class="font-mono">-</span></p>
+                    <p><strong class="text-slate-500">Kepemilikan:</strong> <span id="md-kepemilikan">-</span></p>
+                </div>
+
+                <!-- Address Data -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-2 md:col-span-2">
+                    <h4 class="font-extrabold text-slate-800 uppercase tracking-wide border-b border-slate-200 pb-1 flex items-center gap-1.5">
+                        <i class="fas fa-map-marked-alt text-garjek-600"></i> Alamat KTP
+                    </h4>
+                    <p id="md-alamat" class="uppercase text-slate-700 leading-relaxed">-</p>
+                </div>
+            </div>
+
+            <!-- 1-Click Document Viewers -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                <h4 class="font-extrabold text-slate-800 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                    <i class="fas fa-folder-open text-garjek-600"></i> Dokumen Berkas Driver
+                </h4>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="doc-buttons-container">
+                    <!-- Dynamic Document Buttons Injected Here -->
+                </div>
+            </div>
+
+            <!-- Verification Action Box -->
+            <form onsubmit="submitVerification(event)" class="bg-garjek-50 p-4 rounded-2xl border border-garjek-200 space-y-4">
+                <h4 class="font-extrabold text-garjek-900 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                    <i class="fas fa-check-double text-garjek-600"></i> Form Verifikasi Admin
+                </h4>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Status Dokumen</label>
+                        <select id="ver-status-dokumen" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+                            <option value="Lengkap">Lengkap</option>
+                            <option value="Tidak Lengkap">Tidak Lengkap</option>
+                            <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Status Pembayaran</label>
+                        <select id="ver-status-pembayaran" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+                            <option value="Terverifikasi">Terverifikasi</option>
+                            <option value="Belum Diverifikasi">Belum Diverifikasi</option>
+                            <option value="Tidak Valid">Tidak Valid</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Status Pendaftaran</label>
+                        <select id="ver-status-pendaftaran" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+                            <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                            <option value="Diproses">Diproses</option>
+                            <option value="Disetujui">Disetujui</option>
+                            <option value="Ditolak">Ditolak</option>
+                            <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Catatan Verifikasi</label>
+                    <textarea id="ver-catatan" rows="2" placeholder="Contoh: Foto SIM buram, silakan upload ulang." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium bg-white"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-1">
+                    <button type="button" onclick="closeDetailModal()" class="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-garjek-600 hover:bg-garjek-700 text-white font-extrabold rounded-xl text-xs shadow">
+                        SIMPAN HILANGKAN VERIFIKASI
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="modal-settings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-base font-extrabold text-slate-800">Pengaturan Biaya & Rekening</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+
+            <form onsubmit="saveSystemSettings(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Biaya Registrasi GARBIKE (Rp)</label>
+                    <input type="number" id="set-fee-garbike" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Biaya Registrasi GARCAR (Rp)</label>
+                    <input type="number" id="set-fee-garcar" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Nama Pemilik Akun DANA</label>
+                    <input type="text" id="set-nama-dana" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Nomor DANA</label>
+                    <input type="text" id="set-no-dana" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs" required>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-garjek-600 text-white font-bold rounded-xl text-xs shadow">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN JS LOGIC -->
+    <script>
+        let allDriversData = [];
+        let selectedDriver = null;
+        let trendChartInstance = null;
+        let serviceChartInstance = null;
+
+        function getWebAppUrl() {
+            return localStorage.getItem('garjek_webapp_url') || '';
+        }
+
+        window.onload = function() {
+            const token = sessionStorage.getItem('garjek_admin_session');
+            if (token) {
+                showDashboardView();
+            }
+        };
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-garjek-700 text-white' : (type === 'error' ? 'bg-red-600 text-white' : 'bg-slate-800 text-white');
+            toast.className = `${bg} px-4 py-3 rounded-xl shadow-lg text-xs font-bold flex items-center justify-between gap-2 transition-all duration-300 opacity-100`;
+            toast.innerHTML = `<span>${message}</span><i class="fas fa-times cursor-pointer" onclick="this.parentElement.remove()"></i>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('admin-user').value.trim();
+            const p = document.getElementById('admin-pass').value.trim();
+            const webAppUrl = getWebAppUrl();
+
+            if (webAppUrl) {
+                try {
+                    const res = await fetch(webAppUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'adminLogin', username: u, password: p })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        sessionStorage.setItem('garjek_admin_session', data.token);
+                        showDashboardView();
+                    } else {
+                        showToast('Username atau password salah!', 'error');
+                    }
+                } catch (err) {
+                    showToast('Gagal terhubung ke server backend.', 'error');
+                }
+            } else {
+                // Mock Auth
+                if (u === 'admin' && p === 'admin123') {
+                    sessionStorage.setItem('garjek_admin_session', 'mock_token_123');
+                    showDashboardView();
+                } else {
+                    showToast('Username atau password salah!', 'error');
+                }
+            }
+        }
+
+        function showDashboardView() {
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hidden');
+            loadDashboardData();
+        }
+
+        function adminLogout() {
+            sessionStorage.removeItem('garjek_admin_session');
+            location.reload();
+        }
+
+        async function loadDashboardData() {
+            const webAppUrl = getWebAppUrl();
+            if (webAppUrl) {
+                try {
+                    const res = await fetch(`${webAppUrl}?action=getDashboardData`);
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        allDriversData = data.drivers || [];
+                        renderStatsAndCharts(allDriversData);
+                        renderTableData(allDriversData);
+                    }
+                } catch (e) {
+                    showToast('Gagal memuat data dari spreadsheet.', 'error');
+                }
+            } else {
+                // Mock Data
+                allDriversData = getMockDriversData();
+                renderStatsAndCharts(allDriversData);
+                renderTableData(allDriversData);
+            }
+        }
+
+        function renderStatsAndCharts(data) {
+            const total = data.length;
+            const todayStr = new Date().toLocaleDateString('id-ID');
+            let todayCount = 0;
+            let garbikeCount = 0;
+            let garcarCount = 0;
+            let pendingCount = 0;
+
+            data.forEach(d => {
+                if (d.tanggal_pendaftaran === todayStr) todayCount++;
+                if (d.pilihan_layanan === 'GARBIKE') garbikeCount++;
+                if (d.pilihan_layanan === 'GARCAR') garcarCount++;
+                if (d.status_pendaftaran === 'Menunggu Verifikasi') pendingCount++;
+            });
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-today').innerText = todayCount;
+            document.getElementById('stat-garbike').innerText = garbikeCount;
+            document.getElementById('stat-garcar').innerText = garcarCount;
+            document.getElementById('stat-pending').innerText = pendingCount;
+
+            initCharts(garbikeCount, garcarCount, total);
+        }
+
+        function initCharts(garbike, garcar, total) {
+            // Trend Line Chart
+            const ctxTrend = document.getElementById('chart-trend').getContext('2d');
+            if (trendChartInstance) trendChartInstance.destroy();
+            trendChartInstance = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                    datasets: [{
+                        label: 'Pendaftar Baru',
+                        data: [4, 7, 3, 8, 12, 15, Math.max(1, total)],
+                        borderColor: '#16a34a',
+                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Service Donut Chart
+            const ctxService = document.getElementById('chart-service').getContext('2d');
+            if (serviceChartInstance) serviceChartInstance.destroy();
+            serviceChartInstance = new Chart(ctxService, {
+                type: 'doughnut',
+                data: {
+                    labels: ['GARBIKE', 'GARCAR'],
+                    datasets: [{
+                        data: [garbike || 1, garcar || 1],
+                        backgroundColor: ['#16a34a', '#334155']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderTableData(data) {
+            const tbody = document.getElementById('table-body-drivers');
+            const emptyState = document.getElementById('table-empty-state');
+            document.getElementById('badge-total-table').innerText = `${data.length} Data`;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            let html = '';
+            data.forEach((d, idx) => {
+                let statusColor = 'bg-amber-100 text-amber-800';
+                if (d.status_pendaftaran === 'Disetujui') statusColor = 'bg-green-100 text-green-800';
+                if (d.status_pendaftaran === 'Ditolak') statusColor = 'bg-red-100 text-red-800';
+
+                html += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-mono font-bold text-garjek-700">${d.nomor_pendaftaran}</td>
+                        <td class="p-3 text-slate-500">${d.tanggal_pendaftaran}</td>
+                        <td class="p-3 font-bold text-slate-800">${d.nama_lengkap}</td>
+                        <td class="p-3 font-mono text-slate-500">${d.nik}</td>
+                        <td class="p-3 font-bold">${d.pilihan_layanan}</td>
+                        <td class="p-3 font-mono uppercase">${d.nomor_polisi}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${d.status_dokumen || 'Lengkap'}</span></td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700">${d.status_pembayaran || 'Terverifikasi'}</span></td>
+                        <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${statusColor}">${d.status_pendaftaran}</span></td>
+                        <td class="p-3 text-center">
+                            <button onclick="openDriverDetail(${idx})" class="px-3 py-1 bg-garjek-600 hover:bg-garjek-700 text-white font-bold rounded-lg text-[11px] shadow">
+                                <i class="fas fa-eye"></i> Detail
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function applyTableFilters() {
+            const query = document.getElementById('table-search').value.toLowerCase();
+            const service = document.getElementById('filter-service').value;
+            const status = document.getElementById('filter-status').value;
+
+            const filtered = allDriversData.filter(d => {
+                const matchQuery = d.nama_lengkap.toLowerCase().includes(query) ||
+                                   d.nik.includes(query) ||
+                                   d.nomor_pendaftaran.toLowerCase().includes(query) ||
+                                   d.nomor_polisi.toLowerCase().includes(query);
+                const matchService = !service || d.pilihan_layanan === service;
+                const matchStatus = !status || d.status_pendaftaran === status;
+                return matchQuery && matchService && matchStatus;
+            });
+
+            renderTableData(filtered);
+        }
+
+        function openDriverDetail(index) {
+            selectedDriver = allDriversData[index];
+            if (!selectedDriver) return;
+
+            document.getElementById('md-nama').innerText = selectedDriver.nama_lengkap;
+            document.getElementById('md-layanan').innerText = selectedDriver.pilihan_layanan;
+            document.getElementById('md-id').innerText = selectedDriver.nomor_pendaftaran;
+            document.getElementById('md-nik').innerText = selectedDriver.nik;
+            document.getElementById('md-ttl').innerText = `${selectedDriver.tempat_lahir}, ${selectedDriver.tanggal_lahir}`;
+            document.getElementById('md-jk').innerText = selectedDriver.jenis_kelamin;
+            document.getElementById('md-wa').innerText = selectedDriver.no_whatsapp;
+            document.getElementById('md-email').innerText = selectedDriver.email;
+
+            document.getElementById('md-plat').innerText = selectedDriver.nomor_polisi;
+            document.getElementById('md-kendaraan').innerText = `${selectedDriver.merek_kendaraan} ${selectedDriver.tipe_kendaraan}`;
+            document.getElementById('md-tahun-warna').innerText = `${selectedDriver.tahun_kendaraan} / ${selectedDriver.warna_kendaraan}`;
+            document.getElementById('md-stnk').innerText = selectedDriver.nomor_stnk;
+            document.getElementById('md-kepemilikan').innerText = selectedDriver.status_kepemilikan;
+
+            document.getElementById('md-alamat').innerText = `${selectedDriver.alamat_lengkap}, RT ${selectedDriver.rt} / RW ${selectedDriver.rw}, KEL. ${selectedDriver.kelurahan}, KEC. ${selectedDriver.kecamatan}, ${selectedDriver.kabupaten}, ${selectedDriver.provinsi} ${selectedDriver.kode_pos}`;
+
+            // Render Document Buttons
+            const docContainer = document.getElementById('doc-buttons-container');
+            const docs = [
+                { label: 'Lihat KTP', url: selectedDriver.url_ktp },
+                { label: 'Lihat SIM', url: selectedDriver.url_sim },
+                { label: 'Lihat STNK', url: selectedDriver.url_stnk },
+                { label: 'Foto Driver', url: selectedDriver.url_driver },
+                { label: 'Foto Kendaraan', url: selectedDriver.url_kendaraan },
+                { label: 'Bukti Pembayaran', url: selectedDriver.url_bukti }
+            ];
+
+            let docHtml = '';
+            docs.forEach(doc => {
+                const targetUrl = doc.url || '#';
+                docHtml += `
+                    <a href="${targetUrl}" target="_blank" class="p-2 bg-white border border-slate-200 hover:border-garjek-500 rounded-xl font-bold text-slate-700 flex items-center justify-between hover:text-garjek-600 transition shadow-sm">
+                        <span><i class="fas fa-file-alt text-garjek-600 mr-1"></i> ${doc.label}</span>
+                        <i class="fas fa-external-link-alt text-[10px] text-slate-400"></i>
+                    </a>
+                `;
+            });
+            docContainer.innerHTML = docHtml;
+
+            // Form Fields
+            document.getElementById('ver-status-dokumen').value = selectedDriver.status_dokumen || 'Lengkap';
+            document.getElementById('ver-status-pembayaran').value = selectedDriver.status_pembayaran || 'Terverifikasi';
+            document.getElementById('ver-status-pendaftaran').value = selectedDriver.status_pendaftaran || 'Menunggu Verifikasi';
+            document.getElementById('ver-catatan').value = selectedDriver.catatan_admin || '';
+
+            document.getElementById('modal-detail').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('modal-detail').classList.add('hidden');
+        }
+
+        async function submitVerification(e) {
+            e.preventDefault();
+            if (!selectedDriver) return;
+
+            const newStatusDok = document.getElementById('ver-status-dokumen').value;
+            const newStatusBayar = document.getElementById('ver-status-pembayaran').value;
+            const newStatusPend = document.getElementById('ver-status-pendaftaran').value;
+            const newCatatan = document.getElementById('ver-catatan').value;
+
+            selectedDriver.status_dokumen = newStatusDok;
+            selectedDriver.status_pembayaran = newStatusBayar;
+            selectedDriver.status_pendaftaran = newStatusPend;
+            selectedDriver.catatan_admin = newCatatan;
+
+            const webAppUrl = getWebAppUrl();
+            if (webAppUrl) {
+                try {
+                    await fetch(webAppUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'updateDriverStatus',
+                            nomor_pendaftaran: selectedDriver.nomor_pendaftaran,
+                            status_dokumen: newStatusDok,
+                            status_pembayaran: newStatusBayar,
+                            status_pendaftaran: newStatusPend,
+                            catatan_admin: newCatatan
+                        })
+                    });
+                    showToast('Status berhasil diperbarui!', 'success');
+                } catch (e) {
+                    showToast('Gagal mengupdate status ke Google Sheet.', 'error');
+                }
+            } else {
+                showToast('Status berhasil diperbarui dalam mode lokal.', 'success');
+            }
+
+            closeDetailModal();
+            renderStatsAndCharts(allDriversData);
+            renderTableData(allDriversData);
+        }
+
+        function openSettingsModal() {
+            document.getElementById('set-fee-garbike').value = 150000;
+            document.getElementById('set-fee-garcar').value = 0;
+            document.getElementById('set-nama-dana').value = "Ahmad Syaifuddin";
+            document.getElementById('set-no-dana').value = "081932592253";
+            document.getElementById('modal-settings').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('modal-settings').classList.add('hidden');
+        }
+
+        async function saveSystemSettings(e) {
+            e.preventDefault();
+            const payload = {
+                action: 'updateSettings',
+                biaya_garbike: document.getElementById('set-fee-garbike').value,
+                biaya_garcar: document.getElementById('set-fee-garcar').value,
+                nama_dana: document.getElementById('set-nama-dana').value,
+                no_dana: document.getElementById('set-no-dana').value
+            };
+
+            const webAppUrl = getWebAppUrl();
+            if (webAppUrl) {
+                try {
+                    await fetch(webAppUrl, { method: 'POST', body: JSON.stringify(payload) });
+                    showToast('Pengaturan berhasil disimpan!', 'success');
+                } catch (err) {
+                    showToast('Gagal menyimpan ke server.', 'error');
+                }
+            } else {
+                showToast('Pengaturan disimpan lokal.', 'success');
+            }
+            closeSettingsModal();
+        }
+
+        function exportToCSV() {
+            if (!allDriversData || allDriversData.length === 0) return;
+            let csv = 'Nomor Pendaftaran,Nama,NIK,Layanan,Plat,Status\n';
+            allDriversData.forEach(d => {
+                csv += `"${d.nomor_pendaftaran}","${d.nama_lengkap}","${d.nik}","${d.pilihan_layanan}","${d.nomor_polisi}","${d.status_pendaftaran}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `Data_Mitra_Garjek_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function getMockDriversData() {
+            return [
+                {
+                    nomor_pendaftaran: 'GJ-20260912-0001',
+                    tanggal_pendaftaran: new Date().toLocaleDateString('id-ID'),
+                    nama_lengkap: 'AHMAD SYAIFUDDIN',
+                    nik: '3275011203950001',
+                    tempat_lahir: 'BEKASI',
+                    tanggal_lahir: '1995-03-12',
+                    jenis_kelamin: 'LAKI-LAKI',
+                    no_whatsapp: '081932592253',
+                    email: 'ahmad@garjek.com',
+                    pilihan_layanan: 'GARBIKE',
+                    nomor_polisi: 'B 1234 GAR',
+                    merek_kendaraan: 'HONDA',
+                    tipe_kendaraan: 'VARIO 150',
+                    tahun_kendaraan: '2021',
+                    warna_kendaraan: 'HITAM',
+                    nomor_stnk: '9988776655',
+                    status_kepemilikan: 'MILIK SENDIRI',
+                    alamat_lengkap: 'JL. AHMAD YANI NO. 12',
+                    rt: '001', rw: '002', kelurahan: 'PEKAYON JAYA', kecamatan: 'BEKASI SELATAN', kabupaten: 'KOTA BEKASI', provinsi: 'JAWA BARAT', kode_pos: '17148',
+                    status_dokumen: 'Lengkap',
+                    status_pembayaran: 'Terverifikasi',
+                    status_pendaftaran: 'Disetujui',
+                    catatan_admin: 'Pendaftaran disetujui.',
+                    url_ktp: '#', url_sim: '#', url_stnk: '#', url_driver: '#', url_kendaraan: '#', url_bukti: '#'
+                }
+            ];
+        }
+    </script>
+</body>
+</html>
