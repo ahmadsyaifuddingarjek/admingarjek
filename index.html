@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Garjek Admin - Ride Hailing Dashboard & Analytics</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                            dark: '#0d131a'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="text-slate-800 bg-[#f8fafc] antialiased flex flex-col md:flex-row min-h-screen pb-20 lg:pb-0">
+
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="hidden lg:flex flex-col w-64 bg-[#0e1726] text-slate-300 min-h-screen border-r border-slate-800 sticky top-0 h-screen z-30">
+        <!-- Brand Logo -->
+        <div class="p-5 flex items-center gap-3 border-b border-slate-800/80">
+            <div class="w-10 h-10 rounded-xl bg-brand-500 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-brand-500/30">
+                G
+            </div>
+            <div>
+                <h1 class="font-extrabold text-white text-lg tracking-tight leading-none">GARJEK</h1>
+                <span class="text-[10px] font-semibold tracking-wider uppercase text-brand-500 bg-brand-500/10 px-1.5 py-0.5 rounded">Admin Dashboard</span>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="flex-1 px-3 py-6 space-y-1 overflow-y-auto custom-scrollbar">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold bg-brand-500 text-white shadow-md shadow-brand-500/20 transition">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span>Dashboard Overview</span>
+            </button>
+            <button onclick="switchTab('orders')" id="nav-orders" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
+                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                <span>Rekap Orderan</span>
+            </button>
+            <button onclick="switchTab('drivers')" id="nav-drivers" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span>Statistik Driver</span>
+            </button>
+            <button onclick="switchTab('customers')" id="nav-customers" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
+                <i data-lucide="user-check" class="w-5 h-5"></i>
+                <span>Statistik CS / Pelanggan</span>
+            </button>
+            <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-white transition">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                <span>Grafik Analytics</span>
+            </button>
+        </nav>
+
+        <!-- Rate Setting Card in Sidebar -->
+        <div class="p-4 m-3 bg-slate-800/50 rounded-2xl border border-slate-700/50">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-300">Skema Komisi Admin</span>
+                <span id="sidebar-rate-badge" class="text-[10px] bg-brand-500/20 text-brand-400 font-bold px-2 py-0.5 rounded">5% Active</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3">Pilih % potongan dari ongkir driver Garjek:</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="btn-rate-5" onclick="setCutRate(5)" class="py-1.5 rounded-lg text-xs font-bold transition shadow-sm bg-brand-500 text-white">5 %</button>
+                <button id="btn-rate-10" onclick="setCutRate(10)" class="py-1.5 rounded-lg text-xs font-bold transition opacity-70 bg-slate-700 text-slate-300 hover:opacity-100">10 %</button>
+            </div>
+        </div>
+
+        <!-- User Profile Footer -->
+        <div class="p-4 border-t border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <div class="w-9 h-9 rounded-full bg-slate-700 text-brand-400 font-bold flex items-center justify-center border border-slate-600 shrink-0">
+                    AD
+                </div>
+                <div class="overflow-hidden">
+                    <h4 class="text-xs font-bold text-white truncate">Admin Garjek Pro</h4>
+                    <p id="sheet-sync-status" class="text-[10px] text-amber-400 font-medium truncate flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse"></span> Mode Lokal
+                    </p>
+                </div>
+            </div>
+            <button onclick="openConfigModal()" class="p-1.5 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700 rounded-lg transition" title="Pengaturan Database Google Sheets">
+                <i data-lucide="database" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <div class="flex-1 flex flex-col min-w-0">
+        
+        <!-- TOP HEADER NAVBAR (Mobile & Desktop) -->
+        <header class="bg-white border-b border-slate-200/80 sticky top-0 z-20 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
+            <div class="flex items-center gap-3">
+                <!-- Mobile Logo -->
+                <div class="lg:hidden flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center font-black text-base shadow">G</div>
+                    <span class="font-extrabold text-slate-800 text-base tracking-tight">GARJEK</span>
+                </div>
+                <!-- Title Header -->
+                <div class="hidden lg:block">
+                    <h2 id="header-page-title" class="text-lg font-bold text-slate-800">Dashboard Overviews</h2>
+                    <p id="header-page-subtitle" class="text-xs text-slate-400">Pantau rekapitulasi orderan, database driver & CS real-time</p>
+                </div>
+            </div>
+
+            <!-- Top Actions -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- Rate Selector (Mobile Shortcut) -->
+                <div class="lg:hidden flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+                    <button id="m-rate-5" onclick="setCutRate(5)" class="px-2.5 py-1 rounded-lg font-bold bg-brand-500 text-white shadow-xs">5%</button>
+                    <button id="m-rate-10" onclick="setCutRate(10)" class="px-2.5 py-1 rounded-lg font-bold text-slate-600">10%</button>
+                </div>
+
+                <!-- Google Sheets Config Button (Mobile) -->
+                <button onclick="openConfigModal()" class="lg:hidden bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl text-xs flex items-center justify-center border border-slate-200 transition" title="Pengaturan Google Sheets">
+                    <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i>
+                </button>
+
+                <!-- Add New Order Button -->
+                <button onclick="openModal()" class="bg-brand-500 hover:bg-brand-600 text-white font-bold px-3.5 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-brand-500/20 transition active:scale-95">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>+ Tambah Order</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD MAIN BODY -->
+        <main class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+
+            <!-- TAB 1: DASHBOARD OVERVIEW -->
+            <div id="tab-dashboard" class="tab-content active space-y-6">
+
+                <!-- TIME RANGE COMMISSION BREAKDOWN CARDS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-5">
+                    <!-- Hari Ini -->
+                    <div class="bg-gradient-to-br from-emerald-600 to-teal-800 text-white p-5 rounded-2xl shadow-lg relative overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-semibold text-emerald-100 uppercase tracking-wider">Komisi Hari Ini</span>
+                                <span class="bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold">Today</span>
+                            </div>
+                            <h3 id="stat-revenue-today" class="text-2xl font-black mt-1">Rp 0</h3>
+                        </div>
+                        <div class="mt-3 text-xs text-emerald-100/90 flex items-center justify-between">
+                            <span id="stat-completed-today">0 Order Selesai</span>
+                            <span id="stat-ongkir-today" class="font-bold">Total: Rp 0</span>
+                        </div>
+                        <i data-lucide="calendar" class="absolute -right-3 -bottom-3 w-16 h-16 text-white/10"></i>
+                    </div>
+
+                    <!-- Minggu Ini -->
+                    <div class="bg-gradient-to-br from-indigo-600 to-blue-800 text-white p-5 rounded-2xl shadow-lg relative overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-semibold text-indigo-100 uppercase tracking-wider">Komisi Minggu Ini</span>
+                                <span class="bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold">This Week</span>
+                            </div>
+                            <h3 id="stat-revenue-week" class="text-2xl font-black mt-1">Rp 0</h3>
+                        </div>
+                        <div class="mt-3 text-xs text-indigo-100/90 flex items-center justify-between">
+                            <span id="stat-completed-week">0 Order Selesai</span>
+                            <span id="stat-ongkir-week" class="font-bold">Total: Rp 0</span>
+                        </div>
+                        <i data-lucide="calendar-days" class="absolute -right-3 -bottom-3 w-16 h-16 text-white/10"></i>
+                    </div>
+
+                    <!-- Bulan Ini -->
+                    <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-5 rounded-2xl shadow-lg relative overflow-hidden flex flex-col justify-between border border-slate-700">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Komisi Bulan Ini</span>
+                                <span id="rate-badge-card" class="bg-brand-500/30 text-brand-400 px-2 py-0.5 rounded text-[10px] font-bold">5% Rate</span>
+                            </div>
+                            <h3 id="stat-revenue-month" class="text-2xl font-black mt-1">Rp 0</h3>
+                        </div>
+                        <div class="mt-3 text-xs text-slate-300 flex items-center justify-between">
+                            <span id="stat-completed-month">0 Order Selesai</span>
+                            <span id="stat-ongkir-month" class="font-bold text-brand-400">Total: Rp 0</span>
+                        </div>
+                        <i data-lucide="wallet" class="absolute -right-3 -bottom-3 w-16 h-16 text-white/10"></i>
+                    </div>
+                </div>
+
+                <!-- STAT CARDS GRID WITH CS NEW VS REPEAT & DRIVER RATIOS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+                    <!-- Card 1: Total Selesai Kumulatif -->
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-semibold text-slate-500 uppercase">Total Order Selesai</span>
+                                <div class="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                            <h3 id="stat-completed" class="text-2xl font-black text-slate-800 mt-2">0</h3>
+                        </div>
+                        <p id="stat-completed-ongkir" class="text-[11px] text-slate-500 mt-2 truncate">Total Ongkir: Rp 0</p>
+                    </div>
+
+                    <!-- Card 2: Persentase CS Baru vs Repeat Order -->
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-semibold text-slate-500 uppercase">Rasio Order Baru vs Repeat</span>
+                                <div class="w-7 h-7 bg-sky-50 text-sky-600 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Percentages Display -->
+                            <div class="mt-2 flex items-baseline justify-between">
+                                <div class="flex items-center gap-1.5">
+                                    <span id="stat-cs-new-pct" class="text-lg font-black text-sky-600">0%</span>
+                                    <span class="text-[10px] text-slate-400 font-semibold">Baru</span>
+                                </div>
+                                <div class="text-slate-300 font-bold text-xs">/</div>
+                                <div class="flex items-center gap-1.5">
+                                    <span id="stat-cs-repeat-pct" class="text-lg font-black text-indigo-600">0%</span>
+                                    <span class="text-[10px] text-slate-400 font-semibold">Repeat</span>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar Visualizer -->
+                            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex mt-2.5">
+                                <div id="bar-cs-new" class="bg-sky-500 h-full transition-all duration-500" style="width: 50%"></div>
+                                <div id="bar-cs-repeat" class="bg-indigo-600 h-full transition-all duration-500" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between text-[10px] font-medium text-slate-500 mt-2">
+                            <span id="stat-cs-new-count">0 Order CS Baru</span>
+                            <span id="stat-cs-repeat-count">0 Order CS Repeat</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Database Driver & CS -->
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-semibold text-slate-500 uppercase">Database Terdaftar</span>
+                                <div class="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="users" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 mt-2">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block font-semibold">Driver</span>
+                                    <span id="stat-total-drivers" class="text-lg font-black text-slate-800">0</span>
+                                </div>
+                                <div class="h-6 w-px bg-slate-200"></div>
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block font-semibold">CS / Client</span>
+                                    <span id="stat-total-cs" class="text-lg font-black text-slate-800">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="stat-active-driver-pct" class="text-[11px] text-emerald-600 font-semibold mt-2">0% Driver Aktif Mengantar</p>
+                    </div>
+
+                    <!-- Card 4: Order Batal & No Driver -->
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-semibold text-slate-500 uppercase">Kendala Order</span>
+                                <div class="w-7 h-7 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 mt-2">
+                                <div>
+                                    <span class="text-[10px] text-rose-500 block font-semibold">Batal</span>
+                                    <span id="stat-cancelled" class="text-lg font-black text-slate-800">0</span>
+                                </div>
+                                <div class="h-6 w-px bg-slate-200"></div>
+                                <div>
+                                    <span class="text-[10px] text-amber-500 block font-semibold">No Driver</span>
+                                    <span id="stat-nodriver" class="text-lg font-black text-slate-800">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="stat-failed-rate" class="text-[11px] text-slate-400 mt-2">Gagal: 0% dari total order</p>
+                    </div>
+                </div>
+
+                <!-- QUICK DATABASE CHIPS DISPLAY -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="database" class="w-4 h-4 text-brand-500"></i>
+                            <h3 class="font-bold text-slate-800 text-sm">Daftar Pangkalan Data Driver & CS Tersimpan</h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="backend-type-badge" class="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-md">Storage: Lokal</span>
+                            <button onclick="openConfigModal()" class="text-[11px] font-semibold text-brand-600 hover:underline">Hubungkan Sheets →</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Saved Driver List -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i data-lucide="users" class="w-3.5 h-3.5 text-brand-600"></i>
+                                    Driver Terdaftar
+                                </span>
+                                <button onclick="switchTab('drivers')" class="text-[11px] font-semibold text-brand-600 hover:underline">Lihat Semua →</button>
+                            </div>
+                            <div id="quick-driver-chips" class="flex flex-wrap gap-1.5">
+                                <!-- Chips dynamically inserted -->
+                            </div>
+                        </div>
+
+                        <!-- Saved CS List -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-600"></i>
+                                    CS / Pelanggan Terdaftar
+                                </span>
+                                <button onclick="switchTab('customers')" class="text-[11px] font-semibold text-brand-600 hover:underline">Lihat Semua →</button>
+                            </div>
+                            <div id="quick-cs-chips" class="flex flex-wrap gap-1.5">
+                                <!-- Chips dynamically inserted -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DAILY CHART -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base">Statistik Tren Status Orderan</h3>
+                            <p class="text-xs text-slate-400">Jumlah orderan selesai, batal, & tidak ada driver per hari</p>
+                        </div>
+                        <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full font-medium">7 Hari Terakhir</span>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: REKAP ORDERAN -->
+            <div id="tab-orders" class="tab-content space-y-4">
+                <!-- Back Button Bar -->
+                <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/80 shadow-xs">
+                    <button onclick="switchTab('dashboard')" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 px-3 py-1.5 rounded-xl transition">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>← Kembali ke Beranda</span>
+                    </button>
+                    <span class="text-xs text-slate-400 font-semibold">Halaman Rekap Orderan</span>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                    <!-- Controls Header -->
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-50/50">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-slate-800 text-base">Daftar Rekap Orderan CS</h3>
+                            <span id="total-count-badge" class="bg-brand-50 text-brand-700 border border-brand-200 text-xs px-2.5 py-0.5 rounded-full font-bold">0 Order</span>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Search Box -->
+                            <div class="relative flex-1 sm:w-52">
+                                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="filter-search" oninput="applyFilters()" placeholder="Cari CS / Driver / WA..." class="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            </div>
+
+                            <!-- Filter Tipe CS -->
+                            <select id="filter-cs-type" onchange="applyFilters()" class="py-1.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="ALL">Semua Tipe CS</option>
+                                <option value="Baru">CS Baru</option>
+                                <option value="Repeat">CS Repeat Order</option>
+                            </select>
+
+                            <!-- Status Filter -->
+                            <select id="filter-status" onchange="applyFilters()" class="py-1.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="ALL">Semua Status</option>
+                                <option value="Selesai">Selesai</option>
+                                <option value="Batal">Batal</option>
+                                <option value="Tidak Menemukan Driver">Tidak Ada Driver</option>
+                            </select>
+
+                            <!-- CSV Export Button -->
+                            <button onclick="exportCSV()" class="px-3 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm flex items-center gap-1.5 transition" title="Export Data CSV">
+                                <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
+                                <span>Export CSV</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table Content -->
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-xs uppercase text-slate-400 border-b border-slate-100 font-semibold tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Tanggal & Waktu</th>
+                                    <th class="py-3 px-4">Nama CS</th>
+                                    <th class="py-3 px-4">Tipe CS</th>
+                                    <th class="py-3 px-4">No. WhatsApp</th>
+                                    <th class="py-3 px-4">Driver Garjek</th>
+                                    <th class="py-3 px-4">Rating</th>
+                                    <th class="py-3 px-4">Ongkir Driver</th>
+                                    <th class="py-3 px-4">Komisi Admin</th>
+                                    <th class="py-3 px-4">Catatan</th>
+                                    <th class="py-3 px-4">Status Order</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="order-table-body" class="divide-y divide-slate-100">
+                                <!-- Dynamic Content -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="empty-state" class="hidden text-center py-12 px-4">
+                        <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="inbox" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-700 text-sm">Belum Ada Transaksi</h4>
+                        <p class="text-xs text-slate-400 mt-1">Klik tombol "+ Tambah Order" untuk menambah data rekap baru.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: STATISTIK DRIVER -->
+            <div id="tab-drivers" class="tab-content space-y-4">
+                <!-- Back Button Bar -->
+                <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/80 shadow-xs">
+                    <button onclick="switchTab('dashboard')" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 px-3 py-1.5 rounded-xl transition">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>← Kembali ke Beranda</span>
+                    </button>
+                    <span class="text-xs text-slate-400 font-semibold">Halaman Statistik Driver</span>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-brand-600"></i>
+                                Grafik Pendapatan Ongkir Driver
+                            </h3>
+                            <p class="text-xs text-slate-400">Total akumulasi ongkir yang didapat oleh masing-masing driver</p>
+                        </div>
+                        <!-- Granularity Selector for Driver Chart -->
+                        <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                            <button id="driver-gran-daily" onclick="updateDriverChart('daily')" class="px-3 py-1 rounded-lg bg-brand-500 text-white shadow-xs">Harian</button>
+                            <button id="driver-gran-weekly" onclick="updateDriverChart('weekly')" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">Mingguan</button>
+                            <button id="driver-gran-monthly" onclick="updateDriverChart('monthly')" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">Bulanan</button>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="driverEarningsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">Database & Performa Driver Garjek</h3>
+                            <p class="text-xs text-slate-400">Statistik akumulasi order, ongkir, komisi admin, dan rating tiap driver</p>
+                        </div>
+                        <div class="relative w-full sm:w-64">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="search-driver" oninput="renderDriverStats()" placeholder="Cari nama driver..." class="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+
+                    <!-- Driver Cards & Table -->
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-xs uppercase text-slate-400 border-b border-slate-100 font-semibold tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Nama Driver</th>
+                                    <th class="py-3 px-4">Order Selesai</th>
+                                    <th class="py-3 px-4">Rating Rata-rata</th>
+                                    <th class="py-3 px-4">Total Ongkir Terkumpul</th>
+                                    <th class="py-3 px-4">Komisi untuk Admin</th>
+                                    <th class="py-3 px-4">Aksi / Filter</th>
+                                </tr>
+                            </thead>
+                            <tbody id="driver-stats-tbody" class="divide-y divide-slate-100">
+                                <!-- Dynamic Content Driver -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: STATISTIK CUSTOMER / CS -->
+            <div id="tab-customers" class="tab-content space-y-4">
+                <!-- Back Button Bar -->
+                <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/80 shadow-xs">
+                    <button onclick="switchTab('dashboard')" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 px-3 py-1.5 rounded-xl transition">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>← Kembali ke Beranda</span>
+                    </button>
+                    <span class="text-xs text-slate-400 font-semibold">Halaman Statistik Pelanggan</span>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-600"></i>
+                                Grafik Frekuensi Order Pelanggan (CS)
+                            </h3>
+                            <p class="text-xs text-slate-400">Berapa kali tiap CS melakukan pemesanan dalam rentang waktu yang dipilih</p>
+                        </div>
+                        <!-- Granularity Selector for CS Chart -->
+                        <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                            <button id="cs-gran-daily" onclick="updateCustomerChart('daily')" class="px-3 py-1 rounded-lg bg-indigo-600 text-white shadow-xs">Harian</button>
+                            <button id="cs-gran-weekly" onclick="updateCustomerChart('weekly')" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">Mingguan</button>
+                            <button id="cs-gran-monthly" onclick="updateCustomerChart('monthly')" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">Bulanan</button>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="customerOrdersChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">Database & Loyalitas Customer (CS)</h3>
+                            <p class="text-xs text-slate-400">Daftar CS terdaftar, riwayat order selesai vs batal, dan total belanja ongkir</p>
+                        </div>
+                        <div class="relative w-full sm:w-64">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="search-customer" oninput="renderCustomerStats()" placeholder="Cari nama / WA CS..." class="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+
+                    <!-- Customer Table -->
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-xs uppercase text-slate-400 border-b border-slate-100 font-semibold tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Nama Customer</th>
+                                    <th class="py-3 px-4">No WhatsApp</th>
+                                    <th class="py-3 px-4">Tipe CS Terakhir</th>
+                                    <th class="py-3 px-4">Total Selesai</th>
+                                    <th class="py-3 px-4">Total Batal</th>
+                                    <th class="py-3 px-4">Total Ongkir</th>
+                                    <th class="py-3 px-4">Order Terakhir</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customer-stats-tbody" class="divide-y divide-slate-100">
+                                <!-- Dynamic Content CS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: ANALYTICS BULANAN -->
+            <div id="tab-analytics" class="tab-content space-y-4">
+                <!-- Back Button Bar -->
+                <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/80 shadow-xs">
+                    <button onclick="switchTab('dashboard')" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 px-3 py-1.5 rounded-xl transition">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>← Kembali ke Beranda</span>
+                    </button>
+                    <span class="text-xs text-slate-400 font-semibold">Halaman Grafik Analytics</span>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">Grafik Pendapatan Admin & Volume Order Bulanan</h3>
+                            <p class="text-xs text-slate-400">Akumulasi komisi admin dan jumlah orderan dalam 6 bulan terakhir</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-500 font-medium">Berdasarkan Rate:</span>
+                            <span id="chart-rate-indicator" class="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">5%</span>
+                        </div>
+                    </div>
+                    <div class="h-72 relative">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION BAR (FIXED ON SCREEN BOTTOM FOR MOBILE & IPHONE) -->
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 text-slate-400 z-40 px-2 py-1.5 flex justify-around items-center shadow-2xl">
+        <button onclick="switchTab('dashboard')" id="m-nav-dashboard" class="mobile-nav-btn flex flex-col items-center justify-center p-1.5 text-brand-400 font-bold w-1/5">
+            <i data-lucide="layout-dashboard" class="w-5 h-5 mb-0.5"></i>
+            <span class="text-[10px] tracking-tight">Beranda</span>
+        </button>
+        <button onclick="switchTab('orders')" id="m-nav-orders" class="mobile-nav-btn flex flex-col items-center justify-center p-1.5 hover:text-white w-1/5">
+            <i data-lucide="shopping-bag" class="w-5 h-5 mb-0.5"></i>
+            <span class="text-[10px] tracking-tight">Rekap</span>
+        </button>
+        <button onclick="switchTab('drivers')" id="m-nav-drivers" class="mobile-nav-btn flex flex-col items-center justify-center p-1.5 hover:text-white w-1/5">
+            <i data-lucide="users" class="w-5 h-5 mb-0.5"></i>
+            <span class="text-[10px] tracking-tight">Driver</span>
+        </button>
+        <button onclick="switchTab('customers')" id="m-nav-customers" class="mobile-nav-btn flex flex-col items-center justify-center p-1.5 hover:text-white w-1/5">
+            <i data-lucide="user-check" class="w-5 h-5 mb-0.5"></i>
+            <span class="text-[10px] tracking-tight">CS</span>
+        </button>
+        <button onclick="switchTab('analytics')" id="m-nav-analytics" class="mobile-nav-btn flex flex-col items-center justify-center p-1.5 hover:text-white w-1/5">
+            <i data-lucide="trending-up" class="w-5 h-5 mb-0.5"></i>
+            <span class="text-[10px] tracking-tight">Grafik</span>
+        </button>
+    </div>
+
+    <!-- MODAL TAMBAH / EDIT ORDER GARJEK -->
+    <div id="order-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-100 transform transition-all my-8">
+            <div class="bg-slate-900 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="modal-title" class="font-bold text-sm sm:text-base flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-brand-400"></i>
+                    <span>Tambah Order Garjek Baru</span>
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="order-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4 text-xs text-slate-600">
+                <input type="hidden" id="form-id">
+
+                <!-- Tanggal & Waktu -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Tanggal & Waktu Order</label>
+                    <input type="datetime-local" id="form-date" required class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <!-- CS Name & Type -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Nama Customer (CS)</label>
+                        <input type="text" id="form-name" list="saved-cs-names" oninput="autoFillCSData()" required placeholder="Ketik nama CS..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <datalist id="saved-cs-names"></datalist>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Kategori Customer</label>
+                        <select id="form-cs-type" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                            <option value="Baru">🆕 CS Baru</option>
+                            <option value="Repeat">🔄 CS Repeat Order</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- WhatsApp -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">No. WhatsApp CS</label>
+                    <input type="tel" id="form-wa" list="saved-cs-phones" required placeholder="08xxxxxxxxxx" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <datalist id="saved-cs-phones"></datalist>
+                </div>
+
+                <!-- Status Order -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Status Transaksi</label>
+                    <select id="form-status" onchange="toggleOrderFields()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                        <option value="Selesai">✅ Order Selesai</option>
+                        <option value="Batal">❌ Order Batal</option>
+                        <option value="Tidak Menemukan Driver">⚠️ Tidak Menemukan Driver</option>
+                    </select>
+                </div>
+
+                <!-- Conditional Fields for Driver & Ongkir -->
+                <div id="driver-fields-container" class="space-y-4 pt-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">Nama Driver Garjek</label>
+                            <input type="text" id="form-driver" list="saved-drivers" placeholder="Ketik nama driver..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <datalist id="saved-drivers"></datalist>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">Rating Driver</label>
+                            <select id="form-rating" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                                <option value="5">⭐⭐⭐⭐⭐ (5 Bintang)</option>
+                                <option value="4">⭐⭐⭐⭐ (4 Bintang)</option>
+                                <option value="3">⭐⭐⭐ (3 Bintang)</option>
+                                <option value="2">⭐⭐ (2 Bintang)</option>
+                                <option value="1">⭐ (1 Bintang)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Ongkir Driver (Rp)</label>
+                        <input type="number" id="form-ongkir" placeholder="Contoh: 15000" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono">
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
+                    <textarea id="form-notes" rows="2" placeholder="Detail lokasi, pesanan khusus, alasan batal, dll..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2">
+                    <button type="submit" class="px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl text-xs transition flex-1 flex items-center justify-center gap-1.5 shadow-md shadow-brand-500/20">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Simpan Orderan</span>
+                    </button>
+                    <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl text-xs transition">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL GOOGLE APPS SCRIPT CONFIGURATION -->
+    <div id="config-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-100 transform transition-all my-8">
+            <div class="bg-emerald-800 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-emerald-300"></i>
+                    <span>Integrasi Google Sheets & Apps Script</span>
+                </h3>
+                <button onclick="closeConfigModal()" class="text-emerald-200 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar text-xs text-slate-600">
+                <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 rounded-xl space-y-1">
+                    <p class="font-bold text-xs flex items-center gap-1.5">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                        Database Cloud Gratis Real-Time
+                    </p>
+                    <p class="text-[11px]">Masukkan Web App URL dari Google Apps Script agar semua transaksi orderan Garjek tersimpan permanen di Google Spreadsheet Anda.</p>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Google Apps Script Web App URL</label>
+                    <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <button onclick="saveGasUrl()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex-1 flex items-center justify-center gap-1">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        <span>Simpan & Tes Koneksi</span>
+                    </button>
+                    <button onclick="testGasConnection()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Sync Data</span>
+                    </button>
+                </div>
+
+                <hr class="border-slate-200 my-3">
+
+                <!-- TUTORIAL CARA PASANG -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-800 text-xs flex items-center gap-1">
+                        <i data-lucide="help-circle" class="w-4 h-4 text-brand-600"></i>
+                        Cara Menghubungkan Google Sheets (Langkah-demi-Langkah):
+                    </h4>
+                    <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-slate-600">
+                        <li>Buat <strong>Google Spreadsheet baru</strong> di Google Drive Anda.</li>
+                        <li>Klik menu <strong>Extensions (Ekstensi)</strong> &gt; <strong>Apps Script</strong>.</li>
+                        <li>Salin (copy) kode Apps Script di bawah ini, lalu tempel ke editor kode Apps Script.</li>
+                        <li>Klik tombol <strong>Deploy (Terapkan)</strong> &gt; <strong>New Deployment (Terapkan Baru)</strong>.</li>
+                        <li>Pilih Jenis: <strong>Web App</strong>.
+                            <br>&bull; Execute as: <strong>Me (Saya)</strong>
+                            <br>&bull; Who has access: <strong>Anyone (Siapa saja)</strong>
+                        </li>
+                        <li>Klik <strong>Deploy</strong>, izinkan otorisasi akun Google Anda, lalu salin <strong>Web App URL</strong> dan tempel di kolom di atas.</li>
+                    </ol>
+                </div>
+
+                <!-- CODE SNIPPET TO COPY -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-[11px] text-slate-700">Kode Apps Script (Code.gs):</span>
+                        <button onclick="copyGasScript()" class="text-[10px] font-bold text-brand-600 hover:underline flex items-center gap-1">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy Kode
+                        </button>
+                    </div>
+                    <pre id="gas-code-block" class="bg-slate-900 text-emerald-400 p-3 rounded-xl font-mono text-[10px] overflow-x-auto max-h-40 custom-scrollbar">
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  if (data.length <= 1) {
+    return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+  }
+  var headers = data[0];
+  var result = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      obj[headers[j]] = row[j];
+    }
+    result.push(obj);
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['id', 'date', 'csName', 'csType', 'phone', 'driverName', 'rating', 'status', 'ongkir', 'notes']);
+  }
+  
+  var contents = JSON.parse(e.postData.contents);
+  var action = contents.action;
+  
+  if (action === 'save_all') {
+    var items = contents.data;
+    sheet.clearContents();
+    sheet.appendRow(['id', 'date', 'csName', 'csType', 'phone', 'driverName', 'rating', 'status', 'ongkir', 'notes']);
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      sheet.appendRow([
+        item.id || '',
+        item.date || '',
+        item.csName || '',
+        item.csType || 'Baru',
+        item.phone || '',
+        item.driverName || '-',
+        item.rating || 0,
+        item.status || '',
+        item.ongkir || 0,
+        item.notes || ''
+      ]);
+    }
+    return ContentService.createTextOutput(JSON.stringify({status: 'success'})).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({status: 'error'})).setMimeType(ContentService.MimeType.JSON);
+}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-20 lg:bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transition-all duration-300 translate-y-20 opacity-0 z-50">
+        <i data-lucide="info" class="w-5 h-5 text-brand-400"></i>
+        <span id="toast-msg" class="text-xs font-medium">Notifikasi Sistem</span>
+    </div>
+
+    <script>
+        // Commission Rate Percentage Default
+        let commissionRate = 5;
+
+        // Driver & CS Chart Granularity Controls
+        let driverChartGranularity = 'daily';
+        let customerChartGranularity = 'daily';
+
+        // Google Apps Script Web App URL State
+        let gasWebAppUrl = localStorage.getItem('garjek_gas_url') || '';
+
+        function getFormattedDateOffset(daysOffset, hours = 10) {
+            const d = new Date();
+            d.setDate(d.getDate() + daysOffset);
+            d.setHours(hours, 0, 0, 0);
+            return d.toISOString().slice(0, 16);
+        }
+
+        // Core Orders Data State (Default Mock Data)
+        let defaultOrders = [
+            { id: '101', date: getFormattedDateOffset(0, 8), csName: 'Siti Rahmawati', csType: 'Repeat', phone: '081298765432', driverName: 'Pak Joko M.', rating: 5, status: 'Selesai', ongkir: 22000, notes: 'Antar depan pagar hijau' },
+            { id: '102', date: getFormattedDateOffset(0, 10), csName: 'Ahmad Fauzi', csType: 'Baru', phone: '085712345678', driverName: 'Bang Anton', rating: 5, status: 'Selesai', ongkir: 15000, notes: 'Titip beli air mineral' },
+            { id: '103', date: getFormattedDateOffset(0, 11), csName: 'Budi Santoso', csType: 'Baru', phone: '081311223344', driverName: '-', rating: 0, status: 'Batal', ongkir: 0, notes: 'CS berubah pikiran' },
+            { id: '104', date: getFormattedDateOffset(-1, 13), csName: 'Diana Putri', csType: 'Repeat', phone: '087855667788', driverName: 'Pak Bambang', rating: 4, status: 'Selesai', ongkir: 32000, notes: 'Bawa helm cadangan' },
+            { id: '105', date: getFormattedDateOffset(-1, 15), csName: 'Hendra Setiawan', csType: 'Baru', phone: '089900112233', driverName: '-', rating: 0, status: 'Tidak Menemukan Driver', ongkir: 0, notes: 'Area jam sibuk hujan' },
+            { id: '106', date: getFormattedDateOffset(-2, 9), csName: 'Dewi Sartika', csType: 'Repeat', phone: '081233445566', driverName: 'Mas Rizky', rating: 5, status: 'Selesai', ongkir: 18000, notes: '-' },
+            { id: '107', date: getFormattedDateOffset(-3, 14), csName: 'Eko Prasetyo', csType: 'Repeat', phone: '085299887766', driverName: 'Pak Joko M.', rating: 5, status: 'Selesai', ongkir: 25000, notes: 'Uang pas' },
+            { id: '108', date: getFormattedDateOffset(-4, 16), csName: 'Maya Indah', csType: 'Baru', phone: '081377889900', driverName: 'Bang Anton', rating: 4, status: 'Selesai', ongkir: 12000, notes: '-' }
+        ];
+
+        let orders = JSON.parse(localStorage.getItem('garjek_orders')) || defaultOrders;
+
+        let dailyChartInstance = null;
+        let monthlyChartInstance = null;
+        let driverEarningsChartInstance = null;
+        let customerOrdersChartInstance = null;
+
+        // Initialize App
+        window.onload = function() {
+            lucide.createIcons();
+            initCharts();
+
+            // Check GAS URL
+            const savedGasUrl = localStorage.getItem('garjek_gas_url');
+            if (savedGasUrl) {
+                gasWebAppUrl = savedGasUrl;
+                const gasInput = document.getElementById('gas-url-input');
+                if (gasInput) gasInput.value = savedGasUrl;
+                fetchDataFromGoogleSheets();
+            } else {
+                updateSyncBadge(false);
+                renderDashboard();
+            }
+
+            updateDatalists();
+        };
+
+        // GOOGLE APPS SCRIPT SYNC FUNCTIONS
+        function openConfigModal() {
+            const modal = document.getElementById('config-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('config-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function saveGasUrl() {
+            const urlInput = document.getElementById('gas-url-input')?.value.trim() || '';
+            if (!urlInput) {
+                localStorage.removeItem('garjek_gas_url');
+                gasWebAppUrl = '';
+                updateSyncBadge(false);
+                showToast('URL Google Apps Script dihapus. Berjalan mode lokal.');
+                closeConfigModal();
+                return;
+            }
+
+            gasWebAppUrl = urlInput;
+            localStorage.setItem('garjek_gas_url', urlInput);
+            showToast('Menghubungkan ke Google Sheets...');
+            fetchDataFromGoogleSheets();
+            closeConfigModal();
+        }
+
+        function updateSyncBadge(isConnected) {
+            const syncStatus = document.getElementById('sheet-sync-status');
+            const backendType = document.getElementById('backend-type-badge');
+
+            if (isConnected) {
+                if (syncStatus) {
+                    syncStatus.className = 'text-[10px] text-emerald-400 font-bold truncate flex items-center gap-1';
+                    syncStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-ping"></span> Google Sheets Active';
+                }
+                if (backendType) {
+                    backendType.className = 'text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md';
+                    backendType.innerText = 'Storage: Google Sheets';
+                }
+            } else {
+                if (syncStatus) {
+                    syncStatus.className = 'text-[10px] text-amber-400 font-medium truncate flex items-center gap-1';
+                    syncStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span> Storage Lokal';
+                }
+                if (backendType) {
+                    backendType.className = 'text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-md';
+                    backendType.innerText = 'Storage: Local Browser';
+                }
+            }
+        }
+
+        async function fetchDataFromGoogleSheets() {
+            if (!gasWebAppUrl) return;
+
+            try {
+                const response = await fetch(gasWebAppUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        orders = data.map(item => ({
+                            id: String(item.id || Date.now()),
+                            date: item.date || new Date().toISOString().slice(0, 16),
+                            csName: item.csName || '',
+                            csType: item.csType || 'Baru',
+                            phone: String(item.phone || ''),
+                            driverName: item.driverName || '-',
+                            rating: Number(item.rating || 0),
+                            status: item.status || 'Selesai',
+                            ongkir: Number(item.ongkir || 0),
+                            notes: item.notes || ''
+                        }));
+                        localStorage.setItem('garjek_orders', JSON.stringify(orders));
+                        showToast('Berhasil sinkronisasi data dari Google Sheets!');
+                        updateSyncBadge(true);
+                    } else {
+                        // Empty sheet, sync current data to GAS
+                        syncDataToGoogleSheets();
+                    }
+                }
+            } catch (err) {
+                console.warn('Google Sheets sync error:', err);
+                showToast('Gagal terhubung ke Apps Script. Menggunakan data lokal.');
+                updateSyncBadge(false);
+            } finally {
+                renderDashboard();
+            }
+        }
+
+        async function syncDataToGoogleSheets() {
+            // Save locally
+            localStorage.setItem('garjek_orders', JSON.stringify(orders));
+
+            if (!gasWebAppUrl) return;
+
+            try {
+                updateSyncBadge(true);
+                const payload = {
+                    action: 'save_all',
+                    data: orders
+                };
+
+                await fetch(gasWebAppUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                showToast('Data tersimpan & tersinkron ke Google Sheets');
+            } catch (err) {
+                console.error('Error syncing to Google Sheets:', err);
+                showToast('Gagal menyimpan ke Google Sheets. Tersimpan secara lokal.');
+            }
+        }
+
+        function testGasConnection() {
+            if (!gasWebAppUrl) {
+                showToast('Masukkan URL Apps Script terlebih dahulu.');
+                return;
+            }
+            fetchDataFromGoogleSheets();
+        }
+
+        function copyGasScript() {
+            const codeBlock = document.getElementById('gas-code-block');
+            if (!codeBlock) return;
+            const codeText = codeBlock.innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                showToast('Kode Apps Script berhasil disalin!');
+            }).catch(() => {
+                showToast('Gagal menyalin otomatis. Silakan blok dan copy manual.');
+            });
+        }
+
+        // Navigation Tab Switcher
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.add('active');
+
+            // Update Desktop Sidebar active styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-500', 'text-white', 'shadow-md', 'shadow-brand-500/20');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-brand-500', 'text-white', 'shadow-md', 'shadow-brand-500/20');
+                activeBtn.classList.remove('text-slate-400');
+            }
+
+            // Update Mobile Bottom Nav active styles
+            document.querySelectorAll('.mobile-nav-btn').forEach(mBtn => {
+                mBtn.classList.remove('text-brand-400', 'font-bold');
+                mBtn.classList.add('hover:text-white');
+            });
+            const activeMobileBtn = document.getElementById(`m-nav-${tabId}`);
+            if (activeMobileBtn) {
+                activeMobileBtn.classList.add('text-brand-400', 'font-bold');
+                activeMobileBtn.classList.remove('hover:text-white');
+            }
+
+            // Update Header Title
+            const pageTitle = document.getElementById('header-page-title');
+            const pageSub = document.getElementById('header-page-subtitle');
+            
+            if (tabId === 'dashboard') {
+                if (pageTitle) pageTitle.innerText = "Dashboard Overviews";
+                if (pageSub) pageSub.innerText = "Pantau rekapitulasi orderan, database driver & CS real-time";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (tabId === 'orders') {
+                if (pageTitle) pageTitle.innerText = "Rekapitulasi Orderan";
+                if (pageSub) pageSub.innerText = "Daftar lengkap transaksi orderan CS dan status driver";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (tabId === 'drivers') {
+                if (pageTitle) pageTitle.innerText = "Database & Analytics Driver";
+                if (pageSub) pageSub.innerText = "Akumulasi orderan, total ongkir, komisi admin, & grafik performa";
+                renderDriverStats();
+                updateDriverChart(driverChartGranularity);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (tabId === 'customers') {
+                if (pageTitle) pageTitle.innerText = "Database & Analytics CS (Pelanggan)";
+                if (pageSub) pageSub.innerText = "Daftar pelanggan loyal, total order selesai, & grafik frekuensi pemesanan";
+                renderCustomerStats();
+                updateCustomerChart(customerChartGranularity);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (tabId === 'analytics') {
+                if (pageTitle) pageTitle.innerText = "Grafik Analytics Bulanan";
+                if (pageSub) pageSub.innerText = "Analisis komisi admin dan tren volume transaksi";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Switch Rate Commission (5% vs 10%)
+        function setCutRate(rate) {
+            commissionRate = rate;
+
+            const btn5 = document.getElementById('btn-rate-5');
+            const btn10 = document.getElementById('btn-rate-10');
+            const mBtn5 = document.getElementById('m-rate-5');
+            const mBtn10 = document.getElementById('m-rate-10');
+
+            if (rate === 5) {
+                if (btn5) btn5.className = 'py-1.5 rounded-lg text-xs font-bold transition shadow-sm bg-brand-500 text-white';
+                if (btn10) btn10.className = 'py-1.5 rounded-lg text-xs font-bold transition opacity-70 bg-slate-700 text-slate-300 hover:opacity-100';
+                
+                if (mBtn5) mBtn5.className = 'px-2.5 py-1 rounded-lg font-bold bg-brand-500 text-white shadow-xs';
+                if (mBtn10) mBtn10.className = 'px-2.5 py-1 rounded-lg font-bold text-slate-600';
+            } else {
+                if (btn10) btn10.className = 'py-1.5 rounded-lg text-xs font-bold transition shadow-sm bg-brand-500 text-white';
+                if (btn5) btn5.className = 'py-1.5 rounded-lg text-xs font-bold transition opacity-70 bg-slate-700 text-slate-300 hover:opacity-100';
+
+                if (mBtn10) mBtn10.className = 'px-2.5 py-1 rounded-lg font-bold bg-brand-500 text-white shadow-xs';
+                if (mBtn5) mBtn5.className = 'px-2.5 py-1 rounded-lg font-bold text-slate-600';
+            }
+
+            setElemText('sidebar-rate-badge', `${rate}% Active`);
+            setElemText('rate-badge-card', `${rate}% Rate`);
+            setElemText('chart-rate-indicator', `${rate}%`);
+
+            showToast(`Skema komisi admin diubah ke ${rate}%`);
+            renderDashboard();
+            renderDriverStats();
+        }
+
+        function formatRp(amount) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+        }
+
+        function formatDateDisplay(isoStr) {
+            if (!isoStr) return '-';
+            const date = new Date(isoStr);
+            return date.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function getStarsHtml(rating) {
+            if (!rating || rating <= 0) return '<span class="text-slate-300 text-xs">-</span>';
+            let stars = '';
+            for (let i = 0; i < 5; i++) {
+                if (i < rating) {
+                    stars += '★';
+                } else {
+                    stars += '☆';
+                }
+            }
+            return `<span class="text-amber-400 font-bold tracking-tighter text-xs" title="${rating} Bintang">${stars}</span>`;
+        }
+
+        // AUTO-SAVE DATABASE & AUTOCOMPLETE FUNCTIONS
+        function updateDatalists() {
+            const csNames = [...new Set(orders.map(o => o.csName).filter(Boolean))];
+            const csPhones = [...new Set(orders.map(o => o.phone).filter(Boolean))];
+            const driverNames = [...new Set(orders.map(o => o.driverName).filter(d => d && d !== '-'))];
+
+            const nameList = document.getElementById('saved-cs-names');
+            if (nameList) nameList.innerHTML = csNames.map(n => `<option value="${escapeHtml(n)}">`).join('');
+
+            const phoneList = document.getElementById('saved-cs-phones');
+            if (phoneList) phoneList.innerHTML = csPhones.map(p => `<option value="${escapeHtml(p)}">`).join('');
+
+            const driverList = document.getElementById('saved-drivers');
+            if (driverList) driverList.innerHTML = driverNames.map(d => `<option value="${escapeHtml(d)}">`).join('');
+
+            // Render Quick Chips in Dashboard
+            renderQuickChips(driverNames, csNames);
+        }
+
+        function renderQuickChips(driverNames, csNames) {
+            const driverContainer = document.getElementById('quick-driver-chips');
+            const csContainer = document.getElementById('quick-cs-chips');
+
+            if (driverContainer) {
+                if (driverNames.length === 0) {
+                    driverContainer.innerHTML = `<span class="text-[11px] text-slate-400 italic">Belum ada driver terdaftar</span>`;
+                } else {
+                    driverContainer.innerHTML = driverNames.map(name => `
+                        <button onclick="filterByDriver('${escapeHtml(name)}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-xs font-semibold text-slate-700 transition">
+                            <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+                            ${escapeHtml(name)}
+                        </button>
+                    `).join('');
+                }
+            }
+
+            if (csContainer) {
+                if (csNames.length === 0) {
+                    csContainer.innerHTML = `<span class="text-[11px] text-slate-400 italic">Belum ada CS terdaftar</span>`;
+                } else {
+                    csContainer.innerHTML = csNames.map(name => `
+                        <button onclick="filterByCS('${escapeHtml(name)}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-lg text-xs font-semibold text-slate-700 transition">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            ${escapeHtml(name)}
+                        </button>
+                    `).join('');
+                }
+            }
+        }
+
+        function autoFillCSData() {
+            const nameEl = document.getElementById('form-name');
+            if (!nameEl) return;
+            const typedName = nameEl.value;
+            const foundCS = orders.find(o => o.csName.toLowerCase() === typedName.toLowerCase());
+            if (foundCS) {
+                const waEl = document.getElementById('form-wa');
+                const csTypeEl = document.getElementById('form-cs-type');
+                if (waEl) waEl.value = foundCS.phone;
+                if (csTypeEl) csTypeEl.value = 'Repeat';
+            }
+        }
+
+        // Safe DOM helper
+        function setElemText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
+        // Render Main Dashboard Calculations
+        function renderDashboard() {
+            let totalCompleted = 0;
+            let totalCancelled = 0;
+            let totalNoDriver = 0;
+            let totalOngkir = 0;
+
+            let csNewCount = 0;
+            let csRepeatCount = 0;
+
+            // Time Range Calculations
+            const now = new Date();
+            const todayStr = now.toISOString().slice(0, 10);
+
+            // Get start of this week (Monday)
+            const startOfWeek = new Date(now);
+            const dayOfWeek = startOfWeek.getDay() || 7; 
+            startOfWeek.setDate(startOfWeek.getDate() - dayOfWeek + 1);
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            // Get start of this month
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            let todayOngkir = 0, todayCount = 0;
+            let weekOngkir = 0, weekCount = 0;
+            let monthOngkir = 0, monthCount = 0;
+
+            const filteredOrders = getFilteredOrders();
+
+            orders.forEach(o => {
+                const oDate = new Date(o.date);
+                const oDateStr = o.date.slice(0, 10);
+
+                if (o.csType === 'Repeat') {
+                    csRepeatCount++;
+                } else {
+                    csNewCount++;
+                }
+
+                if (o.status === 'Selesai') {
+                    const ongkirVal = Number(o.ongkir || 0);
+                    totalCompleted++;
+                    totalOngkir += ongkirVal;
+
+                    // Check Today
+                    if (oDateStr === todayStr) {
+                        todayOngkir += ongkirVal;
+                        todayCount++;
+                    }
+
+                    // Check Week
+                    if (oDate >= startOfWeek) {
+                        weekOngkir += ongkirVal;
+                        weekCount++;
+                    }
+
+                    // Check Month
+                    if (oDate >= startOfMonth) {
+                        monthOngkir += ongkirVal;
+                        monthCount++;
+                    }
+
+                } else if (o.status === 'Batal') {
+                    totalCancelled++;
+                } else if (o.status === 'Tidak Menemukan Driver') {
+                    totalNoDriver++;
+                }
+            });
+
+            // Calculate CS New vs Repeat Percentages
+            const totalOrdersAll = orders.length;
+            const csNewPct = totalOrdersAll > 0 ? Math.round((csNewCount / totalOrdersAll) * 100) : 0;
+            const csRepeatPct = totalOrdersAll > 0 ? Math.round((csRepeatCount / totalOrdersAll) * 100) : 0;
+
+            setElemText('stat-cs-new-pct', `${csNewPct}%`);
+            setElemText('stat-cs-repeat-pct', `${csRepeatPct}%`);
+            setElemText('stat-cs-new-count', `${csNewCount} CS Baru`);
+            setElemText('stat-cs-repeat-count', `${csRepeatCount} CS Repeat`);
+
+            const barNew = document.getElementById('bar-cs-new');
+            const barRepeat = document.getElementById('bar-cs-repeat');
+            if (barNew) barNew.style.width = `${csNewPct}%`;
+            if (barRepeat) barRepeat.style.width = `${csRepeatPct}%`;
+
+            // Calculate Admin Commissions
+            const todayRevenue = Math.round(todayOngkir * (commissionRate / 100));
+            const weekRevenue = Math.round(weekOngkir * (commissionRate / 100));
+            const monthRevenue = Math.round(monthOngkir * (commissionRate / 100));
+
+            // Update Time-Based Cards
+            setElemText('stat-revenue-today', formatRp(todayRevenue));
+            setElemText('stat-completed-today', `${todayCount} Order Selesai`);
+            setElemText('stat-ongkir-today', `Total: ${formatRp(todayOngkir)}`);
+
+            setElemText('stat-revenue-week', formatRp(weekRevenue));
+            setElemText('stat-completed-week', `${weekCount} Order Selesai`);
+            setElemText('stat-ongkir-week', `Total: ${formatRp(weekOngkir)}`);
+
+            setElemText('stat-revenue-month', formatRp(monthRevenue));
+            setElemText('stat-completed-month', `${monthCount} Order Selesai`);
+            setElemText('stat-ongkir-month', `Total: ${formatRp(monthOngkir)}`);
+
+            // Calculate Unique Driver and CS & Driver Activity
+            const uniqueDriverNames = [...new Set(orders.map(o => o.driverName).filter(d => d && d !== '-'))];
+            const uniqueCS = new Set(orders.map(o => o.csName).filter(Boolean)).size;
+            const uniqueDriversCount = uniqueDriverNames.length;
+
+            const activeDriversWithCompleted = new Set(
+                orders.filter(o => o.status === 'Selesai' && o.driverName && o.driverName !== '-').map(o => o.driverName)
+            ).size;
+
+            const activeDriverPct = uniqueDriversCount > 0 ? Math.round((activeDriversWithCompleted / uniqueDriversCount) * 100) : 0;
+            const failedOrderCount = totalCancelled + totalNoDriver;
+            const failedRatePct = totalOrdersAll > 0 ? Math.round((failedOrderCount / totalOrdersAll) * 100) : 0;
+
+            setElemText('stat-completed', totalCompleted);
+            setElemText('stat-completed-ongkir', `Total Ongkir: ${formatRp(totalOngkir)}`);
+            setElemText('stat-cancelled', totalCancelled);
+            setElemText('stat-nodriver', totalNoDriver);
+            setElemText('stat-total-drivers', uniqueDriversCount);
+            setElemText('stat-total-cs', uniqueCS);
+            setElemText('stat-active-driver-pct', `${activeDriverPct}% Driver Aktif Mengantar`);
+            setElemText('stat-failed-rate', `Gagal: ${failedRatePct}% dari total order`);
+            setElemText('total-count-badge', `${filteredOrders.length} Order`);
+
+            renderTable(filteredOrders);
+            updateCharts();
+            updateDatalists();
+        }
+
+        function getFilteredOrders() {
+            const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase();
+            const statusVal = document.getElementById('filter-status')?.value || 'ALL';
+            const csTypeVal = document.getElementById('filter-cs-type')?.value || 'ALL';
+
+            return orders.filter(item => {
+                const matchesSearch = item.csName.toLowerCase().includes(searchVal) ||
+                                      item.phone.includes(searchVal) ||
+                                      (item.driverName && item.driverName.toLowerCase().includes(searchVal));
+                
+                const matchesStatus = statusVal === 'ALL' || item.status === statusVal;
+                const matchesCSType = csTypeVal === 'ALL' || item.csType === csTypeVal;
+
+                return matchesSearch && matchesStatus && matchesCSType;
+            });
+        }
+
+        function applyFilters() {
+            const filtered = getFilteredOrders();
+            setElemText('total-count-badge', `${filtered.length} Order`);
+            renderTable(filtered);
+        }
+
+        function filterByDriver(driverName) {
+            switchTab('orders');
+            const searchInput = document.getElementById('filter-search');
+            if (searchInput) searchInput.value = driverName;
+            applyFilters();
+        }
+
+        function filterByCS(csName) {
+            switchTab('orders');
+            const searchInput = document.getElementById('filter-search');
+            if (searchInput) searchInput.value = csName;
+            applyFilters();
+        }
+
+        function renderTable(dataList) {
+            const tbody = document.getElementById('order-table-body');
+            const emptyState = document.getElementById('empty-state');
+
+            if (!tbody) return;
+
+            if (dataList.length === 0) {
+                tbody.innerHTML = '';
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+
+            tbody.innerHTML = dataList.map(order => {
+                const ongkirNum = Number(order.ongkir || 0);
+                const adminCut = Math.round(ongkirNum * (commissionRate / 100));
+
+                let statusBadge = '';
+                if (order.status === 'Selesai') {
+                    statusBadge = `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Selesai</span>`;
+                } else if (order.status === 'Batal') {
+                    statusBadge = `<span class="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Batal</span>`;
+                } else {
+                    statusBadge = `<span class="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Tidak Ada Driver</span>`;
+                }
+
+                let csTypeBadge = order.csType === 'Repeat'
+                    ? `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-lg text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="repeat" class="w-3 h-3"></i> Repeat</span>`
+                    : `<span class="bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-lg text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="user-plus" class="w-3 h-3"></i> Baru</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 font-medium text-slate-700 text-xs whitespace-nowrap">
+                            ${formatDateDisplay(order.date)}
+                        </td>
+                        <td class="py-3 px-4 font-bold text-slate-800 text-sm whitespace-nowrap">
+                            ${escapeHtml(order.csName)}
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap">
+                            ${csTypeBadge}
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap">
+                            <a href="https://wa.me/${order.phone.replace(/[^0-9]/g, '')}" target="_blank" class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold text-xs bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 hover:border-emerald-200 transition">
+                                <i data-lucide="phone" class="w-3 h-3"></i>
+                                ${escapeHtml(order.phone)}
+                            </a>
+                        </td>
+                        <td class="py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">
+                            ${escapeHtml(order.driverName || '-')}
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap">
+                            ${getStarsHtml(order.rating)}
+                        </td>
+                        <td class="py-3 px-4 font-bold text-slate-800 text-xs whitespace-nowrap">
+                            ${order.status === 'Selesai' ? formatRp(ongkirNum) : '-'}
+                        </td>
+                        <td class="py-3 px-4 font-bold text-brand-600 text-xs whitespace-nowrap">
+                            ${order.status === 'Selesai' ? formatRp(adminCut) : '-'}
+                        </td>
+                        <td class="py-3 px-4 text-xs text-slate-500 max-w-xs truncate" title="${escapeHtml(order.notes || '')}">
+                            ${escapeHtml(order.notes || '-')}
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap">
+                            ${statusBadge}
+                        </td>
+                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="editOrder('${order.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition" title="Edit Data">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteOrder('${order.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Hapus Data">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // TAB 3: DRIVER STATISTICS & CHART FUNCTIONS
+        function renderDriverStats() {
+            const tbody = document.getElementById('driver-stats-tbody');
+            if (!tbody) return;
+
+            const searchVal = (document.getElementById('search-driver')?.value || '').toLowerCase();
+
+            // Grouping data by Driver Name
+            const driverMap = {};
+
+            orders.forEach(o => {
+                const name = o.driverName ? o.driverName.trim() : '';
+                if (!name || name === '-') return;
+
+                if (!driverMap[name]) {
+                    driverMap[name] = {
+                        name: name,
+                        completedCount: 0,
+                        totalOngkir: 0,
+                        ratings: []
+                    };
+                }
+
+                if (o.status === 'Selesai') {
+                    driverMap[name].completedCount++;
+                    driverMap[name].totalOngkir += Number(o.ongkir || 0);
+                    if (o.rating > 0) driverMap[name].ratings.push(Number(o.rating));
+                }
+            });
+
+            const driversList = Object.values(driverMap).filter(d => d.name.toLowerCase().includes(searchVal));
+
+            if (driversList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-xs text-slate-400">Tidak ada driver yang cocok dengan pencarian</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = driversList.map(driver => {
+                const avgRating = driver.ratings.length > 0
+                    ? (driver.ratings.reduce((a, b) => a + b, 0) / driver.ratings.length).toFixed(1)
+                    : 0;
+                
+                const adminCut = Math.round(driver.totalOngkir * (commissionRate / 100));
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-extrabold text-xs flex items-center justify-center">
+                                ${driver.name.charAt(0)}
+                            </div>
+                            ${escapeHtml(driver.name)}
+                        </td>
+                        <td class="py-3 px-4 font-bold text-slate-700 text-xs">
+                            ${driver.completedCount} Order Selesai
+                        </td>
+                        <td class="py-3 px-4 text-xs whitespace-nowrap">
+                            <span class="font-bold text-amber-500">${avgRating} ★</span>
+                            <span class="text-[10px] text-slate-400">(${driver.ratings.length} ulasan)</span>
+                        </td>
+                        <td class="py-3 px-4 font-black text-slate-800 text-xs">
+                            ${formatRp(driver.totalOngkir)}
+                        </td>
+                        <td class="py-3 px-4 font-black text-brand-600 text-xs">
+                            ${formatRp(adminCut)}
+                        </td>
+                        <td class="py-3 px-4">
+                            <button onclick="filterByDriver('${escapeHtml(driver.name)}')" class="px-2.5 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg text-xs font-bold transition">
+                                Lihat Order →
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateDriverChart(granularity) {
+            driverChartGranularity = granularity;
+
+            // Highlight Active Granularity Button
+            ['daily', 'weekly', 'monthly'].forEach(g => {
+                const btn = document.getElementById(`driver-gran-${g}`);
+                if (btn) {
+                    if (g === granularity) {
+                        btn.className = 'px-3 py-1 rounded-lg bg-brand-500 text-white shadow-xs';
+                    } else {
+                        btn.className = 'px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900';
+                    }
+                }
+            });
+
+            // Calculate driver earnings grouped by granularity
+            const driverEarnings = {};
+            const now = new Date();
+
+            orders.forEach(o => {
+                if (o.status !== 'Selesai' || !o.driverName || o.driverName === '-') return;
+
+                const oDate = new Date(o.date);
+                let isValidRange = false;
+
+                if (granularity === 'daily') {
+                    // Last 7 days
+                    const diffDays = (now - oDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays <= 7) isValidRange = true;
+                } else if (granularity === 'weekly') {
+                    // Last 30 days (4 weeks)
+                    const diffDays = (now - oDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays <= 30) isValidRange = true;
+                } else if (granularity === 'monthly') {
+                    // Last 180 days (6 months)
+                    const diffDays = (now - oDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays <= 180) isValidRange = true;
+                }
+
+                if (isValidRange) {
+                    driverEarnings[o.driverName] = (driverEarnings[o.driverName] || 0) + Number(o.ongkir || 0);
+                }
+            });
+
+            const labels = Object.keys(driverEarnings);
+            const dataValues = Object.values(driverEarnings);
+
+            if (driverEarningsChartInstance) {
+                driverEarningsChartInstance.data.labels = labels.length ? labels : ['Belum Ada Data'];
+                driverEarningsChartInstance.data.datasets[0].data = dataValues.length ? dataValues : [0];
+                driverEarningsChartInstance.update();
+            }
+        }
+
+        // TAB 4: CUSTOMER STATISTICS & CHART FUNCTIONS
+        function renderCustomerStats() {
+            const tbody = document.getElementById('customer-stats-tbody');
+            if (!tbody) return;
+
+            const searchVal = (document.getElementById('search-customer')?.value || '').toLowerCase();
+
+            // Grouping data by CS Name or Phone
+            const csMap = {};
+
+            orders.forEach(o => {
+                const name = o.csName ? o.csName.trim() : '';
+                if (!name) return;
+
+                if (!csMap[name]) {
+                    csMap[name] = {
+                        name: name,
+                        phone: o.phone,
+                        lastType: o.csType,
+                        completedCount: 0,
+                        cancelCount: 0,
+                        totalSpent: 0,
+                        lastOrderDate: o.date
+                    };
+                }
+
+                if (new Date(o.date) > new Date(csMap[name].lastOrderDate)) {
+                    csMap[name].lastOrderDate = o.date;
+                    csMap[name].lastType = o.csType;
+                }
+
+                if (o.status === 'Selesai') {
+                    csMap[name].completedCount++;
+                    csMap[name].totalSpent += Number(o.ongkir || 0);
+                } else {
+                    csMap[name].cancelCount++;
+                }
+            });
+
+            const csList = Object.values(csMap).filter(c => 
+                c.name.toLowerCase().includes(searchVal) || c.phone.includes(searchVal)
+            );
+
+            if (csList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-xs text-slate-400">Tidak ada customer yang cocok dengan pencarian</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = csList.map(cs => {
+                let csTypeBadge = cs.lastType === 'Repeat'
+                    ? `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">Repeat</span>`
+                    : `<span class="bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">Baru</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 font-extrabold text-xs flex items-center justify-center">
+                                ${cs.name.charAt(0)}
+                            </div>
+                            ${escapeHtml(cs.name)}
+                        </td>
+                        <td class="py-3 px-4 text-xs font-semibold text-slate-600">
+                            ${escapeHtml(cs.phone)}
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap">
+                            ${csTypeBadge}
+                        </td>
+                        <td class="py-3 px-4 font-bold text-emerald-600 text-xs">
+                            ${cs.completedCount} Order
+                        </td>
+                        <td class="py-3 px-4 font-semibold text-slate-400 text-xs">
+                            ${cs.cancelCount} Order
+                        </td>
+                        <td class="py-3 px-4 font-black text-slate-800 text-xs">
+                            ${formatRp(cs.totalSpent)}
+                        </td>
+                        <td class="py-3 px-4 text-xs text-slate-500 whitespace-nowrap">
+                            ${formatDateDisplay(cs.lastOrderDate)}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="filterByCS('${escapeHtml(cs.name)}')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition">
+                                Riwayat Order →
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateCustomerChart(granularity) {
+            customerChartGranularity = granularity;
+
+            // Highlight Active Granularity Button
+            ['daily', 'weekly', 'monthly'].forEach(g => {
+                const btn = document.getElementById(`cs-gran-${g}`);
+                if (btn) {
+                    if (g === granularity) {
+                        btn.className = 'px-3 py-1 rounded-lg bg-indigo-600 text-white shadow-xs';
+                    } else {
+                        btn.className = 'px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900';
+                    }
+                }
+            });
+
+            // Calculate CS order counts grouped by granularity
+            const csOrderCounts = {};
+            const now = new Date();
+
+            orders.forEach(o => {
+                if (!o.csName) return;
+
+                const oDate = new Date(o.date);
+                let isValidRange = false;
+
+                if (granularity === 'daily') {
+                    const diffDays = (now - oDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays <= 7) isValidRange = true;
+                } else if (granularity === 'weekly') {
+                    const diffDays = (now - oDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays <= 30) isValidRange = true;
+                } else if (granularity === 'monthly') {
+                    const diffDays = (now - oDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays <= 180) isValidRange = true;
+                }
+
+                if (isValidRange) {
+                    csOrderCounts[o.csName] = (csOrderCounts[o.csName] || 0) + 1;
+                }
+            });
+
+            const labels = Object.keys(csOrderCounts);
+            const dataValues = Object.values(csOrderCounts);
+
+            if (customerOrdersChartInstance) {
+                customerOrdersChartInstance.data.labels = labels.length ? labels : ['Belum Ada Data'];
+                customerOrdersChartInstance.data.datasets[0].data = dataValues.length ? dataValues : [0];
+                customerOrdersChartInstance.update();
+            }
+        }
+
+        // CHART JS INITIALIZATION
+        function initCharts() {
+            // 1. Daily Trend Chart
+            const ctxDaily = document.getElementById('dailyChart');
+            if (ctxDaily) {
+                dailyChartInstance = new Chart(ctxDaily.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['H-6', 'H-5', 'H-4', 'H-3', 'H-2', 'Kemarin', 'Hari Ini'],
+                        datasets: [
+                            {
+                                label: 'Selesai',
+                                data: [3, 4, 2, 5, 4, 6, 2],
+                                backgroundColor: '#10b981',
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Batal',
+                                data: [0, 1, 0, 1, 0, 1, 1],
+                                backgroundColor: '#f43f5e',
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Tidak Ada Driver',
+                                data: [1, 0, 1, 0, 0, 0, 1],
+                                backgroundColor: '#f59e0b',
+                                borderRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top', labels: { font: { family: 'Plus Jakarta Sans', size: 11 } } }
+                        },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: { ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
+            }
+
+            // 2. Monthly Analytics Chart
+            const ctxMonthly = document.getElementById('monthlyChart');
+            if (ctxMonthly) {
+                monthlyChartInstance = new Chart(ctxMonthly.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: ['Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt'],
+                        datasets: [
+                            {
+                                label: 'Pendapatan Komisi Admin (Rp)',
+                                data: [120000, 150000, 180000, 210000, 190000, 240000],
+                                borderColor: '#059669',
+                                backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Volume Order Selesai',
+                                data: [80, 95, 110, 130, 120, 150],
+                                borderColor: '#6366f1',
+                                borderDash: [5, 5],
+                                fill: false,
+                                tension: 0.4,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                ticks: {
+                                    callback: function(val) { return 'Rp ' + val.toLocaleString('id-ID'); }
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                grid: { drawOnChartArea: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. Driver Earnings Chart
+            const ctxDriver = document.getElementById('driverEarningsChart');
+            if (ctxDriver) {
+                driverEarningsChartInstance = new Chart(ctxDriver.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Pak Joko M.', 'Bang Anton', 'Pak Bambang', 'Mas Rizky'],
+                        datasets: [{
+                            label: 'Total Ongkir Driver (Rp)',
+                            data: [75000, 47000, 32000, 18000],
+                            backgroundColor: '#10b981',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(val) { return 'Rp ' + val.toLocaleString('id-ID'); }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 4. Customer Orders Frequency Chart
+            const ctxCS = document.getElementById('customerOrdersChart');
+            if (ctxCS) {
+                customerOrdersChartInstance = new Chart(ctxCS.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Siti Rahmawati', 'Dewi Sartika', 'Ahmad Fauzi', 'Diana Putri'],
+                        datasets: [{
+                            label: 'Frekuensi Order CS',
+                            data: [3, 2, 1, 1],
+                            backgroundColor: '#6366f1',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateCharts() {
+            // Update Monthly Admin Earnings values dynamically according to rate
+            if (monthlyChartInstance) {
+                const multiplier = commissionRate / 5; // Base is 5%
+                const baseData = [120000, 150000, 180000, 210000, 190000, 240000];
+                monthlyChartInstance.data.datasets[0].data = baseData.map(v => v * multiplier);
+                monthlyChartInstance.update();
+            }
+
+            updateDriverChart(driverChartGranularity);
+            updateCustomerChart(customerChartGranularity);
+        }
+
+        // MODAL & FORM FUNCTIONS
+        function openModal() {
+            const formId = document.getElementById('form-id');
+            const formObj = document.getElementById('order-form');
+            const modalTitle = document.getElementById('modal-title');
+            const formDate = document.getElementById('form-date');
+            const modal = document.getElementById('order-modal');
+
+            if (formId) formId.value = '';
+            if (formObj) formObj.reset();
+            if (modalTitle) modalTitle.innerText = 'Tambah Order Garjek Baru';
+
+            // Set Default DateTime Now
+            if (formDate) {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                formDate.value = now.toISOString().slice(0, 16);
+            }
+
+            toggleOrderFields();
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('order-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function toggleOrderFields() {
+            const statusEl = document.getElementById('form-status');
+            const driverContainer = document.getElementById('driver-fields-container');
+            if (!statusEl || !driverContainer) return;
+            
+            if (statusEl.value === 'Selesai') {
+                driverContainer.style.display = 'block';
+            } else {
+                driverContainer.style.display = 'none';
+            }
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('form-id')?.value || '';
+            const date = document.getElementById('form-date')?.value || new Date().toISOString().slice(0, 16);
+            const csName = document.getElementById('form-name')?.value.trim() || '';
+            const csType = document.getElementById('form-cs-type')?.value || 'Baru';
+            const phone = document.getElementById('form-wa')?.value.trim() || '';
+            const status = document.getElementById('form-status')?.value || 'Selesai';
+            const driverName = document.getElementById('form-driver')?.value.trim() || '-';
+            const rating = Number(document.getElementById('form-rating')?.value || 0);
+            const ongkir = status === 'Selesai' ? Number(document.getElementById('form-ongkir')?.value || 0) : 0;
+            const notes = document.getElementById('form-notes')?.value.trim() || '';
+
+            if (id) {
+                // EDIT
+                const index = orders.findIndex(o => o.id === id);
+                if (index !== -1) {
+                    orders[index] = { id, date, csName, csType, phone, driverName: status === 'Selesai' ? driverName : '-', rating: status === 'Selesai' ? rating : 0, status, ongkir, notes };
+                    showToast('Data orderan berhasil diperbarui!');
+                }
+            } else {
+                // ADD NEW
+                const newOrder = {
+                    id: String(Date.now()),
+                    date,
+                    csName,
+                    csType,
+                    phone,
+                    driverName: status === 'Selesai' ? driverName : '-',
+                    rating: status === 'Selesai' ? rating : 0,
+                    status,
+                    ongkir,
+                    notes
+                };
+                orders.unshift(newOrder);
+                showToast('Orderan Garjek baru berhasil ditambahkan!');
+            }
+
+            closeModal();
+            renderDashboard();
+            syncDataToGoogleSheets();
+
+            if (document.getElementById('tab-drivers')?.classList.contains('active')) renderDriverStats();
+            if (document.getElementById('tab-customers')?.classList.contains('active')) renderCustomerStats();
+        }
+
+        function editOrder(id) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
+            const formId = document.getElementById('form-id');
+            const formDate = document.getElementById('form-date');
+            const formName = document.getElementById('form-name');
+            const formCsType = document.getElementById('form-cs-type');
+            const formWa = document.getElementById('form-wa');
+            const formStatus = document.getElementById('form-status');
+            const formDriver = document.getElementById('form-driver');
+            const formRating = document.getElementById('form-rating');
+            const formOngkir = document.getElementById('form-ongkir');
+            const formNotes = document.getElementById('form-notes');
+            const modalTitle = document.getElementById('modal-title');
+            const modal = document.getElementById('order-modal');
+
+            if (formId) formId.value = order.id;
+            if (formDate) formDate.value = order.date;
+            if (formName) formName.value = order.csName;
+            if (formCsType) formCsType.value = order.csType || 'Baru';
+            if (formWa) formWa.value = order.phone;
+            if (formStatus) formStatus.value = order.status;
+            if (formDriver) formDriver.value = order.driverName === '-' ? '' : order.driverName;
+            if (formRating) formRating.value = order.rating || 5;
+            if (formOngkir) formOngkir.value = order.ongkir || '';
+            if (formNotes) formNotes.value = order.notes || '';
+
+            toggleOrderFields();
+            if (modalTitle) modalTitle.innerText = 'Edit Data Order Garjek';
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function deleteOrder(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus data rekap orderan ini?')) {
+                orders = orders.filter(o => o.id !== id);
+                renderDashboard();
+                syncDataToGoogleSheets();
+
+                if (document.getElementById('tab-drivers')?.classList.contains('active')) renderDriverStats();
+                if (document.getElementById('tab-customers')?.classList.contains('active')) renderCustomerStats();
+                showToast('Data orderan berhasil dihapus.');
+            }
+        }
+
+        // CSV EXPORT
+        function exportCSV() {
+            if (orders.length === 0) {
+                showToast('Tidak ada data orderan untuk diekspor.');
+                return;
+            }
+
+            let csv = 'ID,Tanggal & Waktu,Nama CS,Tipe CS,No WA,Driver,Rating,Status,Ongkir Driver (Rp),Komisi Admin (Rp),Catatan\n';
+
+            orders.forEach(o => {
+                const ongkir = Number(o.ongkir || 0);
+                const adminCut = o.status === 'Selesai' ? Math.round(ongkir * (commissionRate / 100)) : 0;
+                csv += `"${o.id}","${o.date}","${o.csName}","${o.csType || 'Baru'}","${o.phone}","${o.driverName}","${o.rating}","${o.status}","${ongkir}","${adminCut}","${o.notes || ''}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Rekap_Garjek_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('File CSV rekapitulasi berhasil diunduh!');
+        }
+
+        // TOAST NOTIFICATION HELPERS
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+
+            if (!toast || !toastMsg) return;
+
+            toastMsg.innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
